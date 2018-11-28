@@ -6,4 +6,9 @@
            android:icon="@drawable/ic_my_location_black_24dp"
            android:contentDescription="goes to my location"
            app:showAsAction="always" />
+    <item  android:id="@+id/menu_search"
+           android:title="Search"
+           android:icon="@drawable/ic_search_black_24dp"
+           android:contentDescription="searches an address"
+           app:showAsAction="always" />
 </menu>

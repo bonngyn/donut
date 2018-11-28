@@ -252,6 +252,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         return when (id) {
             R.id.menu_my_location -> onClickMenuMyLocation()
+            R.id.menu_search -> onClickMenuSearch()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -266,10 +267,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return true
     }
 
-    // referencing google docs
-    private fun buildSearchIntent() {
+    // opens search bar on search click
+    private fun onClickMenuSearch(): Boolean {
+        // referencing google docs
         try {
-            val intent: Intent = PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
+            val intent: Intent = PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_OVERLAY)
                 .build(this);
             startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
         } catch (e: GooglePlayServicesRepairableException) {
@@ -277,6 +279,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         } catch (e: GooglePlayServicesNotAvailableException) {
             // TODO: Handle the error.
         }
+        return true
     }
 
     // referencing google docs
