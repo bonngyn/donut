@@ -1,5 +1,6 @@
 package edu.uw.bonngyn.donut
 
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -9,11 +10,19 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.app.ActivityCompat
+import android.support.v4.app.FragmentActivity
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.animation.LinearInterpolator
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.location.*
+import com.google.android.gms.location.places.GeoDataClient
+import com.google.android.gms.location.places.Place
+import com.google.android.gms.location.places.ui.PlaceAutocomplete
+import com.google.android.gms.location.places.ui.PlacePicker
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -27,6 +36,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var map: GoogleMap
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var geoDataClient: GeoDataClient
 
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationSettingsRequest: LocationSettingsRequest
@@ -82,16 +92,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // sets an add floating action button
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
-            // open add activity
-            /* fill in */
+            // TODO: allows for adding marker location to map and database
         }
     }
 
     // sets a settings floating action button
     private fun onClickSettingsFab() {
         fab_settings.setOnClickListener {
-            // open settings activity
-            /* fill in */
+            // TODO: opens settings
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
@@ -108,7 +116,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             // check permissions now
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_LOCATION
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE
             )
         }
     }
@@ -211,7 +219,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             // check Permissions Now
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_LOCATION
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_REQUEST_CODE
             )
         }
     }
@@ -258,8 +266,40 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return true
     }
 
+    // referencing google docs
+    private fun buildSearchIntent() {
+        try {
+            val intent: Intent = PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
+                .build(this);
+            startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
+        } catch (e: GooglePlayServicesRepairableException) {
+            // TODO: Handle the error.
+        } catch (e: GooglePlayServicesNotAvailableException) {
+            // TODO: Handle the error.
+        }
+    }
+
+    // referencing google docs
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                val place = PlaceAutocomplete.getPlace(this, data!!)
+                Log.i(TAG, "Place: " + place.name)
+            } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+                val status = PlaceAutocomplete.getStatus(this, data!!)
+                // TODO: Handle the error.
+                Log.i(TAG, status.statusMessage)
+
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                // The user canceled the operation.
+            }
+        }
+    }
+
     companion object {
-        private const val REQUEST_LOCATION = 0
+        private const val LOCATION_REQUEST_CODE = 0
+        private const val PLACE_AUTOCOMPLETE_REQUEST_CODE = 1;
         private const val LOCATION_KEY = "location"
+        private const val TAG = "donut"
     }
 }
