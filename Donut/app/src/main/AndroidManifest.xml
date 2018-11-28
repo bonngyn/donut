@@ -35,15 +35,15 @@
             </intent-filter>
         </activity>
 
-        <!-- workaround to fix bug -->
-        <uses-library
-                android:name="org.apache.http.legacy"
-                android:required="false"/>
-
-        <activity
-                android:name=".SettingsActivity"
-                android:label="@string/title_activity_settings">
+        <activity android:name=".SettingsActivity"
+                  android:parentActivityName=".MapsActivity"
+                  android:label="@string/title_activity_settings">
         </activity>
+
+        <!-- workaround to fix bug -->
+        <uses-library android:name="org.apache.http.legacy"
+                      android:required="false"/>
+
     </application>
 
 </manifest>
