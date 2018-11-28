@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">donut</string>
     <string name="title_activity_maps">Map</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!-- Strings related to Settings below -->
+
 </resources>

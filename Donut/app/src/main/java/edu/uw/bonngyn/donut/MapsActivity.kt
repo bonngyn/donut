@@ -9,7 +9,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -21,7 +20,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import java.util.*
+import kotlinx.android.synthetic.main.activity_maps.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -44,6 +43,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         prepareMap()
+        onClickAddFab()
+        onClickSettingsFab()
         updateValuesFromBundle(savedInstanceState)
         getLastKnownLocation()
         createLocationCallback()
@@ -76,6 +77,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // when the map is ready
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+    }
+
+    // sets an add floating action button
+    private fun onClickAddFab() {
+        fab_add.setOnClickListener {
+            // open add activity
+            /* fill in */
+        }
+    }
+
+    // sets a settings floating action button
+    private fun onClickSettingsFab() {
+        fab_settings.setOnClickListener {
+            // open settings activity
+            /* fill in */
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
     }
 
     // finds the last known location to initialize UI
