@@ -287,6 +287,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 val place = PlaceAutocomplete.getPlace(this, data!!)
+                val zoomLevel = 15f
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(place.latLng, zoomLevel))
                 Log.i(TAG, "Place: " + place.name)
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 val status = PlaceAutocomplete.getStatus(this, data!!)
