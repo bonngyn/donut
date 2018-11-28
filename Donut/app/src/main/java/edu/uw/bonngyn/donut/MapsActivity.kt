@@ -60,7 +60,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun updateValuesFromBundle(savedInstanceState: Bundle?) {
         savedInstanceState ?: return
 
-        // gets polyline color
+        // gets current location
         if (savedInstanceState.keySet().contains(LOCATION_KEY)) {
             currentLocation = savedInstanceState.getParcelable(LOCATION_KEY)
         }
