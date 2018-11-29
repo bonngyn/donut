@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "853907400840",
+    "firebase_url": "https://donut-fed19.firebaseio.com",
+    "project_id": "donut-fed19",
+    "storage_bucket": "donut-fed19.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853907400840:android:9509bf52dcf64f94",
+        "android_client_info": {
+          "package_name": "edu.uw.bonngyn.donut"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "853907400840-b321n9f3bj8i9cgnd4relukh5ut8q2da.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "edu.uw.bonngyn.donut",
+            "certificate_hash": "e8a93c6e92cc7c3b9c6b194ca657b55f37c64db1"
+          }
+        },
+        {
+          "client_id": "853907400840-ig9fgji404n0s24ltatm4617pu8lukfj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn8lymWgZqYm5rwCqDCEtV_IAo9Gq2wVI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853907400840-ig9fgji404n0s24ltatm4617pu8lukfj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
