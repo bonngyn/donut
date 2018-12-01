@@ -49,6 +49,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
+    private lateinit var sensor: Sensor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -60,7 +61,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // initializes shake listener
         shakeListener = ShakeListener();
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         prepareMap()
         onClickAddFab()
@@ -134,7 +134,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // initializes the map user interface
     private fun initializeUI(location: Location?) {
         if (location != null) {
-            val currentLatLng = LatLng(location!!.latitude, location!!.longitude)
+            val currentLatLng = LatLng(location.latitude, location.longitude)
             val markerHue = 205f
             currentLocationMarker = map.addMarker(
                 MarkerOptions()
@@ -241,15 +241,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // starts listening for shakes
     private fun startShakeListener() {
-        val sensor: Sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        if (sensor != null) {
-            sensorManager.registerListener(shakeListener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        if (sensorManager != null) {
+            sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+            if (sensor != null) {
+                sensorManager.registerListener(shakeListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            } else {
+                // throws exception if accelerometer are not supported
+                throw UnsupportedOperationException("accelerometer not supported");
+            }
+        } else {
+            // throws exception if sensors are not supported
+            throw UnsupportedOperationException("Sensors not supported");
         }
     }
 
     // stops listening for shakes
     private fun stopShakeListener() {
-        sensorManager.unregisterListener(shakeListener)
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(shakeListener)
+        }
     }
 
     override fun onResume() {
