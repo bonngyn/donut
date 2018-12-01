@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.FragmentActivity
 import android.util.Log
@@ -50,6 +51,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
     private lateinit var sensor: Sensor
+    private var shakeOption = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -61,6 +63,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // initializes shake listener
         shakeListener = ShakeListener();
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         prepareMap()
         onClickAddFab()
@@ -241,9 +245,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // starts listening for shakes
     private fun startShakeListener() {
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         if (sensorManager != null) {
-            sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
             if (sensor != null) {
                 sensorManager.registerListener(shakeListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
             } else {
@@ -266,7 +268,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
-        startShakeListener()
+        shakeOption = PreferenceManager
+            .getDefaultSharedPreferences(this)
+            .getBoolean("shake_option", false)
+        if (shakeOption) startShakeListener()
     }
 
     override fun onPause() {

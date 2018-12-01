@@ -1,3 +1,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- add settings here -->
+    <SwitchPreference
+            android:key="shake_option"
+            android:defaultValue="false"
+            android:title="Shake option"
+            android:summary="@string/shake_option_summary"/>
 </PreferenceScreen>
