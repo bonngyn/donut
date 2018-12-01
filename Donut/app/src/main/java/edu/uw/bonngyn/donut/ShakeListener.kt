@@ -43,20 +43,18 @@ class ShakeListener : SensorEventListener {
                     if (++shakeCount >= SHAKE_COUNT && currTime - lastShake > SHAKE_DURATION) {
                         lastShake = currTime
                         shakeCount = 0;
-                        Log.d("donutshake", "Shaking lol")
+                        Log.d("donutshake", "yolo")
+
+                        // TODO calculate shortest distance
                     }
                     lastAccel = currTime
                 }
                 lastTime = currTime
             }
-
         }
-
     }
 
     companion object {
-
-        // referenced google
         private const val SHAKE_THRESHOLD = 3.25f
         private const val TIME_THRESHOLD = 100
         private const val SHAKE_TIMEOUT = 500
