@@ -1,8 +1,11 @@
 package edu.uw.bonngyn.donut
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -36,7 +39,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var map: GoogleMap
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var geoDataClient: GeoDataClient
 
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationSettingsRequest: LocationSettingsRequest
@@ -45,6 +47,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var currentLocationMarker: Marker
     private var currentLocation: Location? = null
 
+    private lateinit var shakeListener: ShakeListener
+    private lateinit var sensorManager: SensorManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
@@ -52,6 +57,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // initializes location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        // initializes shake listener
+        shakeListener = ShakeListener();
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
         prepareMap()
         onClickAddFab()
@@ -111,7 +120,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             // get last known location
             fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
                 currentLocation = location
-                initializeUI()
+                initializeUI(location)
             }
         } else {
             // check permissions now
@@ -123,9 +132,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     // initializes the map user interface
-    private fun initializeUI() {
-        if (currentLocation != null) {
-            val currentLatLng = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
+    private fun initializeUI(location: Location?) {
+        if (location != null) {
+            val currentLatLng = LatLng(location!!.latitude, location!!.longitude)
             val markerHue = 205f
             currentLocationMarker = map.addMarker(
                 MarkerOptions()
@@ -230,14 +239,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
+    // starts listening for shakes
+    private fun startShakeListener() {
+        val sensor: Sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if (sensor != null) {
+            sensorManager.registerListener(shakeListener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+    }
+
+    // stops listening for shakes
+    private fun stopShakeListener() {
+        sensorManager.unregisterListener(shakeListener)
+    }
+
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
+        startShakeListener()
     }
 
     override fun onPause() {
         super.onPause()
         stopLocationUpdates()
+        stopShakeListener()
     }
 
     // creates menu options
