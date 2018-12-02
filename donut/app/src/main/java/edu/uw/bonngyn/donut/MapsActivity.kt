@@ -20,6 +20,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.animation.LinearInterpolator
+import android.widget.Toast
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.location.*
@@ -52,6 +53,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var sensorManager: SensorManager
     private lateinit var sensor: Sensor
     private var shakeOption = false
+    private var radiusOption = 15;
+    private var timeOption = "15";
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -107,6 +110,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
             // TODO: allows for adding marker location to map and database
+            Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
+            val obj = object : GoogleMap.OnMarkerDragListener {
+                override fun onMarkerDrag(p0: Marker?) {
+                    Log.v("Marker", "Dragging")
+                }
+
+                override fun onMarkerDragEnd(p0: Marker?) {
+                    val markerLocation:LatLng = p0!!.position
+                    Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
+                    Log.v("Marker", "finished")
+                }
+
+                override fun onMarkerDragStart(p0: Marker?) {
+                    Log.v("Marker", "Started")
+                }
+            }
+            val currposition:LatLng = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
+            val newMarker = map.addMarker(MarkerOptions().position(currposition)
+                .title("Draggable Marker")
+                .snippet("Long press and move the marker if needed.")
+                .draggable(true))
+            map.setOnMarkerDragListener(obj)
         }
     }
 
@@ -272,6 +297,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .getDefaultSharedPreferences(this)
             .getBoolean("shake_option", false)
         if (shakeOption) startShakeListener()
+        radiusOption = PreferenceManager
+            .getDefaultSharedPreferences(this)
+            .getInt("radius_option", 15)
+        timeOption = PreferenceManager
+            .getDefaultSharedPreferences(this)
+            .getString("time_option", "15")
+        Log.v("timeDonut", "" + timeOption)
     }
 
     override fun onPause() {
