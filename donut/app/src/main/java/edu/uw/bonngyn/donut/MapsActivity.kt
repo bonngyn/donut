@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Point
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.location.Location
@@ -15,25 +16,31 @@ import android.os.SystemClock
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.FragmentActivity
+import android.support.v7.app.AlertDialog
+import android.text.InputType
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View.X
+import android.view.View.Y
 import android.view.animation.LinearInterpolator
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Toast
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.location.*
-import com.google.android.gms.location.places.GeoDataClient
-import com.google.android.gms.location.places.Place
 import com.google.android.gms.location.places.ui.PlaceAutocomplete
-import com.google.android.gms.location.places.ui.PlacePicker
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.android.synthetic.main.activity_maps.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -52,14 +59,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
     private lateinit var sensor: Sensor
+
     private var shakeOption = false
-    private var radiusOption = 15;
-    private var timeOption = "15";
+    private var radiusOption = 15
+    private var timeOption = "15"
+
+    private lateinit var database: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
+        // initializes database
+        database = FirebaseDatabase.getInstance().reference
 
         // initializes location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -106,39 +119,63 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map = googleMap
     }
 
+    // handles the dialog box that appears when adding a marker
+    private fun handleMarkerDialog(position: LatLng) {
+        val builder = AlertDialog.Builder(this)
+
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+
+        val title = EditText(this)
+        title.hint = "Title"
+        layout.addView(title) // Notice this is an add method
+
+        val description = EditText(this)
+        description.hint = "Description"
+        layout.addView(description) // Another add method
+
+        builder.setView(layout) // Again this is a set method, not add
+
+        // adds the marker
+        builder.setPositiveButton("Accept") { _, _ ->
+            val newMarker = map.addMarker(
+                MarkerOptions().position(position)
+                    .title(title.text.toString())
+                    .snippet(description.text.toString())
+                    .draggable(true)
+            )
+            // TODO: add marker title, description and location to database
+        }
+
+        // cancels share
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.cancel()
+        }
+        builder.show()
+
+        // sets long click listener back to null
+        map.setOnMapLongClickListener {
+            // ignore
+        }
+    }
+
+    private fun handleAddMarker() {
+        map.setOnMapLongClickListener {
+            handleMarkerDialog(it)
+        }
+    }
+
     // sets an add floating action button
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
-            // TODO: allows for adding marker location to map and database
             Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
-            val obj = object : GoogleMap.OnMarkerDragListener {
-                override fun onMarkerDrag(p0: Marker?) {
-                    Log.v("Marker", "Dragging")
-                }
-
-                override fun onMarkerDragEnd(p0: Marker?) {
-                    val markerLocation:LatLng = p0!!.position
-                    Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
-                    Log.v("Marker", "finished")
-                }
-
-                override fun onMarkerDragStart(p0: Marker?) {
-                    Log.v("Marker", "Started")
-                }
-            }
-            val currposition:LatLng = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
-            val newMarker = map.addMarker(MarkerOptions().position(currposition)
-                .title("Draggable Marker")
-                .snippet("Long press and move the marker if needed.")
-                .draggable(true))
-            map.setOnMarkerDragListener(obj)
+            handleAddMarker()
         }
     }
 
     // sets a settings floating action button
     private fun onClickSettingsFab() {
         fab_settings.setOnClickListener {
-            // TODO: opens settings
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
@@ -293,10 +330,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
+
         shakeOption = PreferenceManager
             .getDefaultSharedPreferences(this)
             .getBoolean("shake_option", false)
         if (shakeOption) startShakeListener()
+
         radiusOption = PreferenceManager
             .getDefaultSharedPreferences(this)
             .getInt("radius_option", 15)
@@ -304,6 +343,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .getDefaultSharedPreferences(this)
             .getString("time_option", "15")
         Log.v("timeDonut", "" + timeOption)
+
+        // TODO: use radius and time to filter the received markers
     }
 
     override fun onPause() {
