@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Point
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.location.Location
@@ -15,16 +14,11 @@ import android.os.Looper
 import android.os.SystemClock
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
-import android.support.v4.app.FragmentActivity
 import android.support.v7.app.AlertDialog
-import android.text.InputType
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View.X
-import android.view.View.Y
 import android.view.animation.LinearInterpolator
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -63,6 +57,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var shakeOption = false
     private var radiusOption = 15
     private var timeOption = "15"
+    private var zoomlevel = 18f
 
     private lateinit var database: DatabaseReference
 
@@ -83,6 +78,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         prepareMap()
+        onClickZoomFab()
         onClickAddFab()
         onClickSettingsFab()
         updateValuesFromBundle(savedInstanceState)
@@ -166,6 +162,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    //zooming buttons
+    private fun onClickZoomFab() {
+        zoomin.setOnClickListener {
+            zoomlevel += 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+        }
+
+        zoomout.setOnClickListener {
+            zoomlevel -= 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+        }
+    }
+
     // sets an add floating action button
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
@@ -209,8 +218,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Your location")
                     .icon(BitmapDescriptorFactory.defaultMarker(markerHue))
             )
-            val zoomLevel = 18f
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomLevel))
+            zoomlevel = 18f
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomlevel))
         }
     }
 
@@ -270,7 +279,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
-                for (location in locationResult.locations){
+                for (location in locationResult.locations) {
                     currentLocation = location
 
                     updateUI()
