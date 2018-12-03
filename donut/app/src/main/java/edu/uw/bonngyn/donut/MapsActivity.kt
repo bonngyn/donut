@@ -159,6 +159,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    // handles adding a marker through long click on the map
     private fun handleAddMarker() {
         map.setOnMapLongClickListener {
             handleMarkerDialog(it)
