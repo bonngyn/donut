@@ -55,6 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var shakeOption = false
     private var radiusOption = 15;
     private var timeOption = "15";
+    private var zoomlevel = 18f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -69,7 +70,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+
+
         prepareMap()
+        onClickZoomFab()
         onClickAddFab()
         onClickSettingsFab()
         updateValuesFromBundle(savedInstanceState)
@@ -104,6 +108,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // when the map is ready
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+    }
+
+    //zooming buttons
+    private fun onClickZoomFab() {
+        zoomin.setOnClickListener {
+            zoomlevel += 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel.toFloat()))
+        }
+
+        zoomout.setOnClickListener {
+            zoomlevel -= 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel.toFloat()))
+        }
     }
 
     // sets an add floating action button
@@ -171,8 +188,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Your location")
                     .icon(BitmapDescriptorFactory.defaultMarker(markerHue))
             )
-            val zoomLevel = 18f
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomLevel))
+            zoomlevel = 18f
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomlevel))
         }
     }
 
