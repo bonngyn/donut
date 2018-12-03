@@ -34,6 +34,10 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import kotlinx.android.synthetic.main.activity_maps.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -51,6 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
+    private lateinit var db: FirebaseFirestore
     private lateinit var sensor: Sensor
     private var shakeOption = false
     private var radiusOption = 15;
@@ -78,6 +83,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         createLocationRequest()
         buildLocationSettingsRequest()
         startLocationUpdates()
+
+        db = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setTimestampsInSnapshotsEnabled(true)
+            .build()
+        db.firestoreSettings = settings
     }
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
@@ -106,6 +117,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map = googleMap
     }
 
+    private fun createDroffOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
+        val dropoff = Dropoff(title, description, location, delivered)
+        db.collection("dropoffs")
+            .add(dropoff)
+            .addOnSuccessListener { documentReference ->
+                Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.id)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+
+    }
+
     // sets an add floating action button
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
@@ -119,6 +143,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 override fun onMarkerDragEnd(p0: Marker?) {
                     val markerLocation:LatLng = p0!!.position
                     Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
+                    val location: GeoPoint = GeoPoint(markerLocation.latitude, markerLocation.longitude)
+                    createDroffOff("test", "hello this is a test write", location, false)
                     Log.v("Marker", "finished")
                 }
 
