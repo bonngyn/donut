@@ -124,7 +124,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         val title = EditText(this)
         title.hint = "Title"
-        layout.addView(title) // Notice this is an add method
+        layout.addView(title)
 
         val description = EditText(this)
         description.hint = "Description"
