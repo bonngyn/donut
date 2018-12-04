@@ -139,6 +139,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delivered!") { dialog, which ->
             val dropoff  = db.collection("dropoffs").document(marker.tag.toString())
             dropoff.update("delivered", true)
+            marker.remove()
         }
         alertDialog.show()
     }
