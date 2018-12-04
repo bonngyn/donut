@@ -1,23 +1,25 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- add settings here -->
-    <SwitchPreference
-            android:key="shake_option"
-            android:defaultValue="false"
-            android:title="Shake option"
-            android:summary="@string/shake_option_summary"/>
-    <SeekBarPreference
-        android:key="radius_option"
-        android:title="@string/radius_option"
-        android:summary="@string/radius_option_summary"
-        android:defaultValue="15"
-        android:min="1"
-        android:max="100"
-    />
-    <ListPreference
-        android:key="time_option"
-        android:title="@string/time_option"
-        android:summary="@string/time_option_summary"
-        android:entries="@array/time_display"
-        android:entryValues="@array/time_data"
-    />
+    <PreferenceCategory android:title="Filters">
+        <ListPreference
+            android:key="time_option"
+            android:title="@string/time_option"
+            android:summary="@string/time_option_summary"
+            android:entries="@array/time_display"
+            android:entryValues="@array/time_data"/>
+        <SeekBarPreference
+                android:key="radius_option"
+                android:title="@string/radius_option"
+                android:summary="@string/radius_option_summary"
+                android:defaultValue="15"
+                android:min="1"
+                android:max="100"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Accessibility">
+        <SwitchPreference
+                android:key="shake_option"
+                android:defaultValue="false"
+                android:title="Shake option"
+                android:summary="@string/shake_option_summary"/>
+    </PreferenceCategory>
 </PreferenceScreen>

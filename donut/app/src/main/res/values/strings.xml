@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">donut</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="add_directions">Long click the screen to create a new marker at the desired location.</string>
 
     <!-- Strings related to Settings below -->
     <string name="shake_option">Shake option</string>
@@ -9,5 +10,4 @@
     <string name="radius_option_summary">An option to filter requests by radius.</string>
     <string name="time_option">Time option</string>
     <string name="time_option_summary">An option to filter requests by time.</string>
-    <string name="add_directions">Long click the marker and dragged to desired location.</string>
 </resources>

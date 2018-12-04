@@ -7,7 +7,7 @@ data class GeoPoint (
 
 data class Dropoff (
     var title: String,
-    var descripption: String?,
+    var description: String?,
     var location: GeoPoint,
     var delivered: Boolean
 )

@@ -14,20 +14,19 @@ import android.os.Looper
 import android.os.SystemClock
 import android.preference.PreferenceManager
 import android.support.v4.app.ActivityCompat
-import android.support.v4.app.FragmentActivity
+import android.support.v7.app.AlertDialog
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.animation.LinearInterpolator
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Toast
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.location.*
-import com.google.android.gms.location.places.GeoDataClient
-import com.google.android.gms.location.places.Place
 import com.google.android.gms.location.places.ui.PlaceAutocomplete
-import com.google.android.gms.location.places.ui.PlacePicker
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -38,6 +37,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+
 import kotlinx.android.synthetic.main.activity_maps.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -57,14 +57,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var sensorManager: SensorManager
     private lateinit var db: FirebaseFirestore
     private lateinit var sensor: Sensor
+
     private var shakeOption = false
-    private var radiusOption = 15;
-    private var timeOption = "15";
+    private var radiusOption = 15
+    private var timeOption = "15"
+    private var zoomlevel = 18f
+
+    private lateinit var database: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
+        // initializes database
+        database = FirebaseDatabase.getInstance().reference
 
         // initializes location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -74,7 +81,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+        // initializes firestore
+        db = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setTimestampsInSnapshotsEnabled(true)
+            .build()
+        db.firestoreSettings = settings
+
         prepareMap()
+        onClickZoomFab()
         onClickAddFab()
         onClickSettingsFab()
         updateValuesFromBundle(savedInstanceState)
@@ -83,12 +98,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         createLocationRequest()
         buildLocationSettingsRequest()
         startLocationUpdates()
-
-        db = FirebaseFirestore.getInstance()
-        val settings = FirebaseFirestoreSettings.Builder()
-            .setTimestampsInSnapshotsEnabled(true)
-            .build()
-        db.firestoreSettings = settings
+        getDropoffs()
     }
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
@@ -117,7 +127,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map = googleMap
     }
 
-    private fun createDroffOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
+    private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
         val dropoff = Dropoff(title, description, location, delivered)
         db.collection("dropoffs")
             .add(dropoff)
@@ -127,14 +137,108 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnFailureListener { e ->
                 Log.w(TAG, "Error adding document", e)
             }
+    }
 
+    private fun getDropoffs() {
+        db.collection("dropoffs").whereEqualTo("delivered", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    for (dropoff in result) {
+                        dropoffs.clear()
+                        val dropoff = dropoff.data
+
+                        val title = dropoff.get("title") as String
+                        val description = dropoff.get("description") as String
+                        val location = dropoff.get("location") as Map<String, Number>
+                        val geoLoc = GeoPoint(location.get("latitude"), location.get("longitude"))
+                        val delivered = dropoff.get("delivered") as Boolean
+
+                        val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
+                        map.addMarker(
+                            MarkerOptions().position(pos)
+                                .title(title)
+                                .snippet(description)
+                                .draggable(false)
+                        )
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.w(TAG, "Error getting dropoffs", exception)
+            }
+    }
+
+
+    // handles the dialog box that appears when adding a marker
+    private fun handleMarkerDialog(position: LatLng) {
+        val builder = AlertDialog.Builder(this)
+
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+
+        val title = EditText(this)
+        title.hint = "Title"
+        layout.addView(title) // Notice this is an add method
+
+        val description = EditText(this)
+        description.hint = "Description"
+        layout.addView(description) // Another add method
+
+        builder.setView(layout) // Again this is a set method, not add
+
+        // adds the marker
+        builder.setPositiveButton("Accept") { _, _ ->
+            val newMarker = map.addMarker(
+                MarkerOptions().position(position)
+                    .title(title.text.toString())
+                    .snippet(description.text.toString())
+                    .draggable(true)
+            )
+            // TODO: add marker title, description and location to database
+            val title = title.text.toString()
+            val description = description.text.toString()
+            val location = GeoPoint(position.latitude, position.longitude)
+            createDropOff(title, description, location, false)
+        }
+
+        // cancels share
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.cancel()
+        }
+        builder.show()
+
+        // sets long click listener back to null
+        map.setOnMapLongClickListener {
+            // ignore
+        }
+    }
+
+    // handles adding a marker through long click on the map
+    private fun handleAddMarker() {
+        map.setOnMapLongClickListener {
+            handleMarkerDialog(it)
+        }
+    }
+
+    //zooming buttons
+    private fun onClickZoomFab() {
+        zoomin.setOnClickListener {
+            zoomlevel += 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+        }
+
+        zoomout.setOnClickListener {
+            zoomlevel -= 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+        }
     }
 
     // sets an add floating action button
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
-            // TODO: allows for adding marker location to map and database
             Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
+
             val obj = object : GoogleMap.OnMarkerDragListener {
                 override fun onMarkerDrag(p0: Marker?) {
                     Log.v("Marker", "Dragging")
@@ -144,7 +248,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     val markerLocation:LatLng = p0!!.position
                     Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
                     val location: GeoPoint = GeoPoint(markerLocation.latitude, markerLocation.longitude)
-                    createDroffOff("test", "hello this is a test write", location, false)
                     Log.v("Marker", "finished")
                 }
 
@@ -158,13 +261,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 .snippet("Long press and move the marker if needed.")
                 .draggable(true))
             map.setOnMarkerDragListener(obj)
+            handleAddMarker()
         }
     }
 
     // sets a settings floating action button
     private fun onClickSettingsFab() {
         fab_settings.setOnClickListener {
-            // TODO: opens settings
             startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
@@ -197,8 +300,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Your location")
                     .icon(BitmapDescriptorFactory.defaultMarker(markerHue))
             )
-            val zoomLevel = 18f
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomLevel))
+            zoomlevel = 18f
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomlevel))
         }
     }
 
@@ -258,7 +361,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
-                for (location in locationResult.locations){
+                for (location in locationResult.locations) {
                     currentLocation = location
 
                     updateUI()
@@ -319,10 +422,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onResume() {
         super.onResume()
         startLocationUpdates()
+
         shakeOption = PreferenceManager
             .getDefaultSharedPreferences(this)
             .getBoolean("shake_option", false)
         if (shakeOption) startShakeListener()
+
         radiusOption = PreferenceManager
             .getDefaultSharedPreferences(this)
             .getInt("radius_option", 15)
@@ -330,6 +435,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .getDefaultSharedPreferences(this)
             .getString("time_option", "15")
         Log.v("timeDonut", "" + timeOption)
+
+        // TODO: use radius and time to filter the received markers
     }
 
     override fun onPause() {
