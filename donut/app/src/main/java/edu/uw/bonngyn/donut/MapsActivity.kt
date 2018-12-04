@@ -2,6 +2,7 @@ package edu.uw.bonngyn.donut
 
 import android.app.Activity
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -35,6 +36,9 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+
 import kotlinx.android.synthetic.main.activity_maps.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -52,6 +56,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
+    private lateinit var db: FirebaseFirestore
     private lateinit var sensor: Sensor
 
     private var shakeOption = false
@@ -77,6 +82,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+        // initializes firestore
+        db = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setTimestampsInSnapshotsEnabled(true)
+            .build()
+        db.firestoreSettings = settings
+
         prepareMap()
         onClickZoomFab()
         onClickAddFab()
@@ -87,6 +99,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         createLocationRequest()
         buildLocationSettingsRequest()
         startLocationUpdates()
+        getDropoffs()
     }
 
     override fun onSaveInstanceState(savedInstanceState: Bundle?) {
@@ -113,7 +126,66 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // when the map is ready
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+        map.setOnInfoWindowClickListener {
+            dropoffAlert(it)
+        }
     }
+
+    private fun dropoffAlert(marker: Marker) {
+        val alertDialog = AlertDialog.Builder(this).create()
+        alertDialog.setTitle("Delivery")
+        alertDialog.setMessage("Mark this as delivered?")
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel") { dialog, _ -> dialog.dismiss()}
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delivered!") { dialog, which ->
+            val dropoff  = db.collection("dropoffs").document(marker.tag.toString())
+            dropoff.update("delivered", true)
+            marker.remove()
+        }
+        alertDialog.show()
+    }
+
+    private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
+        val dropoff = Dropoff(title, description, location, delivered)
+        db.collection("dropoffs")
+            .add(dropoff)
+            .addOnSuccessListener { documentReference ->
+                Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.id)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error adding document", e)
+            }
+    }
+
+    private fun getDropoffs() {
+        db.collection("dropoffs").whereEqualTo("delivered", false)
+            .get()
+            .addOnSuccessListener { result ->
+                if (!result.isEmpty) {
+                    for (dropoff in result) {
+                        val dropoffData = dropoff.data
+
+                        val title = dropoffData.get("title") as String
+                        val description = dropoffData.get("description") as String
+                        val location = dropoffData.get("location") as Map<String, Number>
+                        val geoLoc = GeoPoint(location.get("latitude"), location.get("longitude"))
+                        val delivered = dropoffData.get("delivered") as Boolean
+
+                        val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
+                        val marker = map.addMarker(
+                            MarkerOptions().position(pos)
+                                .title(title)
+                                .snippet(description)
+                                .draggable(false)
+                        )
+                        marker.tag = dropoff.id
+                    }
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.w(TAG, "Error getting dropoffs", exception)
+            }
+    }
+
 
     // handles the dialog box that appears when adding a marker
     private fun handleMarkerDialog(position: LatLng) {
@@ -141,6 +213,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .draggable(true)
             )
             // TODO: add marker title, description and location to database
+            val title = title.text.toString()
+            val description = description.text.toString()
+            val location = GeoPoint(position.latitude, position.longitude)
+            createDropOff(title, description, location, false)
         }
 
         // cancels share
@@ -179,6 +255,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun onClickAddFab() {
         fab_add.setOnClickListener {
             Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
+
+            val obj = object : GoogleMap.OnMarkerDragListener {
+                override fun onMarkerDrag(p0: Marker?) {
+                    Log.v("Marker", "Dragging")
+                }
+
+                override fun onMarkerDragEnd(p0: Marker?) {
+                    val markerLocation:LatLng = p0!!.position
+                    Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
+                    val location: GeoPoint = GeoPoint(markerLocation.latitude, markerLocation.longitude)
+                    Log.v("Marker", "finished")
+                }
+
+                override fun onMarkerDragStart(p0: Marker?) {
+                    Log.v("Marker", "Started")
+                }
+            }
+            val currposition:LatLng = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
+            val newMarker = map.addMarker(MarkerOptions().position(currposition)
+                .title("Draggable Marker")
+                .snippet("Long press and move the marker if needed.")
+                .draggable(true))
+            map.setOnMarkerDragListener(obj)
             handleAddMarker()
         }
     }
