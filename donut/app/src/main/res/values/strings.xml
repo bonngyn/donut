@@ -7,7 +7,8 @@
     <string name="shake_option">Shake option</string>
     <string name="shake_option_summary">An option to find the nearest marker by shaking the phone.</string>
     <string name="radius_option">Radius option</string>
-    <string name="radius_option_summary">An option to filter requests by radius.</string>
+    <string name="radius_option_summary">An option to filter requests by radius in kilometers.</string>
     <string name="time_option">Time option</string>
     <string name="time_option_summary">An option to filter requests by time.</string>
+    <string name="radius_toggle">Either filter by radius or explore all markers.</string>
 </resources>

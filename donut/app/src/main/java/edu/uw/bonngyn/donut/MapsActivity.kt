@@ -33,6 +33,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.common.collect.ImmutableList
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
@@ -56,6 +57,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var sensor: Sensor
 
     private lateinit var database: FirebaseFirestore
+
+    private var radiusToggle = false
 
     private var shakeOption = false
     private var radiusOption = 15
@@ -154,6 +157,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     // gets all the dropoffs from the database and adds them to the map
     private fun getDropoffs() {
+        val distResult = FloatArray(1)
         database.collection("dropoffs").whereEqualTo("delivered", false)
             .get()
             .addOnSuccessListener { result ->
@@ -169,14 +173,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                         val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
                         // TODO: use radius and time to filter the received markers
-
-                        val marker = map.addMarker(
-                            MarkerOptions().position(pos)
-                                .title(title)
-                                .snippet(description)
-                                .draggable(false)
-                        )
-                        marker.tag = dropoff.id
+                        //Filter by radius
+                        if(radiusToggle){
+                            Location.distanceBetween(currentLocation!!.latitude, currentLocation!!.longitude, pos.latitude, pos.longitude, distResult)
+                            if((distResult[0] / 1000) <= radiusOption) {
+                                val marker = map.addMarker(
+                                    MarkerOptions().position(pos)
+                                        .title(title)
+                                        .snippet(description)
+                                        .draggable(false)
+                                )
+                                marker.tag = dropoff.id
+                            }
+                        } else {
+                            val marker = map.addMarker(
+                                MarkerOptions().position(pos)
+                                    .title(title)
+                                    .snippet(description)
+                                    .draggable(false)
+                            )
+                            marker.tag = dropoff.id
+                        }
                     }
                 }
             }
@@ -418,7 +435,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .getDefaultSharedPreferences(this)
             .getBoolean("shake_option", false)
         if (shakeOption) startShakeListener()
-
+        radiusToggle = PreferenceManager
+            .getDefaultSharedPreferences(this)
+            .getBoolean("radius_toggle", false)
         radiusOption = PreferenceManager
             .getDefaultSharedPreferences(this)
             .getInt("radius_option", 15)

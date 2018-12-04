@@ -7,6 +7,12 @@
             android:summary="@string/time_option_summary"
             android:entries="@array/time_display"
             android:entryValues="@array/time_data"/>
+        <SwitchPreference
+            android:key="radius_toggle"
+            android:defaultValue="false"
+            android:title="Radius filter"
+            android:summary="@string/radius_toggle"
+        />
         <SeekBarPreference
                 android:key="radius_option"
                 android:title="@string/radius_option"
