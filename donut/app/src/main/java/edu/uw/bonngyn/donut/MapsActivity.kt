@@ -2,6 +2,7 @@ package edu.uw.bonngyn.donut
 
 import android.app.Activity
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -125,6 +126,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // when the map is ready
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+        map.setOnInfoWindowClickListener {
+            dropoffAlert(it)
+        }
+    }
+
+    private fun dropoffAlert(marker: Marker) {
+        val alertDialog = AlertDialog.Builder(this).create()
+        alertDialog.setTitle("Delivery")
+        alertDialog.setMessage("Mark this as delivered?")
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel") { dialog, _ -> dialog.dismiss()}
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delivered!") { dialog, which ->
+            val dropoff  = db.collection("dropoffs").document(marker.tag.toString())
+            dropoff.update("delivered", true)
+        }
+        alertDialog.show()
     }
 
     private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
@@ -145,21 +161,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnSuccessListener { result ->
                 if (!result.isEmpty) {
                     for (dropoff in result) {
-                        val dropoff = dropoff.data
+                        val dropoffData = dropoff.data
 
-                        val title = dropoff.get("title") as String
-                        val description = dropoff.get("description") as String
-                        val location = dropoff.get("location") as Map<String, Number>
+                        val title = dropoffData.get("title") as String
+                        val description = dropoffData.get("description") as String
+                        val location = dropoffData.get("location") as Map<String, Number>
                         val geoLoc = GeoPoint(location.get("latitude"), location.get("longitude"))
-                        val delivered = dropoff.get("delivered") as Boolean
+                        val delivered = dropoffData.get("delivered") as Boolean
 
                         val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
-                        map.addMarker(
+                        val marker = map.addMarker(
                             MarkerOptions().position(pos)
                                 .title(title)
                                 .snippet(description)
                                 .draggable(false)
                         )
+                        marker.tag = dropoff.id
                     }
                 }
             }
