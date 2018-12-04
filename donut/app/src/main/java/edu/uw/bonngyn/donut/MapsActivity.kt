@@ -2,7 +2,6 @@ package edu.uw.bonngyn.donut
 
 import android.app.Activity
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -34,8 +33,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
@@ -56,23 +53,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var shakeListener: ShakeListener
     private lateinit var sensorManager: SensorManager
-    private lateinit var db: FirebaseFirestore
     private lateinit var sensor: Sensor
+
+    private lateinit var database: FirebaseFirestore
 
     private var shakeOption = false
     private var radiusOption = 15
     private var timeOption = "15"
     private var zoomlevel = 18f
 
-    private lateinit var database: DatabaseReference
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-
-        // initializes database
-        database = FirebaseDatabase.getInstance().reference
 
         // initializes location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -83,11 +76,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         // initializes firestore
-        db = FirebaseFirestore.getInstance()
+        database = FirebaseFirestore.getInstance()
         val settings = FirebaseFirestoreSettings.Builder()
             .setTimestampsInSnapshotsEnabled(true)
             .build()
-        db.firestoreSettings = settings
+        database.firestoreSettings = settings
 
         prepareMap()
         onClickZoomFab()
@@ -131,22 +124,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    // alert message to mark as delivered
     private fun dropoffAlert(marker: Marker) {
         val alertDialog = AlertDialog.Builder(this).create()
         alertDialog.setTitle("Delivery")
         alertDialog.setMessage("Mark this as delivered?")
         alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel") { dialog, _ -> dialog.dismiss()}
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delivered!") { dialog, which ->
-            val dropoff  = db.collection("dropoffs").document(marker.tag.toString())
+            val dropoff  = database.collection("dropoffs").document(marker.tag.toString())
             dropoff.update("delivered", true)
             marker.remove()
+            // TODO: Delivered screen shows up
         }
         alertDialog.show()
     }
 
+    // creates a dropoff for given information about a marker
     private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
         val dropoff = Dropoff(title, description, location, delivered)
-        db.collection("dropoffs")
+        database.collection("dropoffs")
             .add(dropoff)
             .addOnSuccessListener { documentReference ->
                 Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.id)
@@ -156,8 +152,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
     }
 
+    // gets all the dropoffs from the database and adds them to the map
     private fun getDropoffs() {
-        db.collection("dropoffs").whereEqualTo("delivered", false)
+        database.collection("dropoffs").whereEqualTo("delivered", false)
             .get()
             .addOnSuccessListener { result ->
                 if (!result.isEmpty) {
@@ -171,6 +168,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         val delivered = dropoffData.get("delivered") as Boolean
 
                         val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
+                        // TODO: use radius and time to filter the received markers
+
                         val marker = map.addMarker(
                             MarkerOptions().position(pos)
                                 .title(title)
@@ -206,16 +205,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // adds the marker
         builder.setPositiveButton("Accept") { _, _ ->
-            val newMarker = map.addMarker(
-                MarkerOptions().position(position)
-                    .title(title.text.toString())
-                    .snippet(description.text.toString())
-                    .draggable(true)
-            )
-            // TODO: add marker title, description and location to database
             val title = title.text.toString()
             val description = description.text.toString()
             val location = GeoPoint(position.latitude, position.longitude)
+            map.addMarker(
+                MarkerOptions().position(position)
+                    .title(title)
+                    .snippet(description)
+            )
             createDropOff(title, description, location, false)
         }
 
@@ -235,6 +232,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun handleAddMarker() {
         map.setOnMapLongClickListener {
             handleMarkerDialog(it)
+    }
+    }
+
+    // sets an add floating action button
+    private fun onClickAddFab() {
+        fab_add.setOnClickListener {
+            Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
+            handleAddMarker()
+        }
+    }
+
+    // sets a settings floating action button
+    private fun onClickSettingsFab() {
+        fab_settings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
@@ -248,44 +260,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         zoomout.setOnClickListener {
             zoomlevel -= 1
             map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
-        }
-    }
-
-    // sets an add floating action button
-    private fun onClickAddFab() {
-        fab_add.setOnClickListener {
-            Toast.makeText(this@MapsActivity, getString(R.string.add_directions), Toast.LENGTH_LONG).show()
-
-            val obj = object : GoogleMap.OnMarkerDragListener {
-                override fun onMarkerDrag(p0: Marker?) {
-                    Log.v("Marker", "Dragging")
-                }
-
-                override fun onMarkerDragEnd(p0: Marker?) {
-                    val markerLocation:LatLng = p0!!.position
-                    Toast.makeText(this@MapsActivity, markerLocation.toString(), Toast.LENGTH_LONG).show()
-                    val location: GeoPoint = GeoPoint(markerLocation.latitude, markerLocation.longitude)
-                    Log.v("Marker", "finished")
-                }
-
-                override fun onMarkerDragStart(p0: Marker?) {
-                    Log.v("Marker", "Started")
-                }
-            }
-            val currposition:LatLng = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
-            val newMarker = map.addMarker(MarkerOptions().position(currposition)
-                .title("Draggable Marker")
-                .snippet("Long press and move the marker if needed.")
-                .draggable(true))
-            map.setOnMarkerDragListener(obj)
-            handleAddMarker()
-        }
-    }
-
-    // sets a settings floating action button
-    private fun onClickSettingsFab() {
-        fab_settings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
@@ -452,8 +426,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .getDefaultSharedPreferences(this)
             .getString("time_option", "15")
         Log.v("timeDonut", "" + timeOption)
-
-        // TODO: use radius and time to filter the received markers
     }
 
     override fun onPause() {
