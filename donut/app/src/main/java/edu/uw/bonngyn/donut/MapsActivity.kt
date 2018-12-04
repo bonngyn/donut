@@ -145,7 +145,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnSuccessListener { result ->
                 if (!result.isEmpty) {
                     for (dropoff in result) {
-                        dropoffs.clear()
                         val dropoff = dropoff.data
 
                         val title = dropoff.get("title") as String
