@@ -140,6 +140,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             dropoff.update("delivered", true)
             marker.remove()
             // TODO: Delivered screen shows up
+            startActivity(Intent(applicationContext, Delivered::class.java))
+
         }
         alertDialog.show()
     }

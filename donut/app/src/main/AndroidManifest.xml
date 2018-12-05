@@ -40,6 +40,10 @@
                   android:label="@string/title_activity_settings">
         </activity>
 
+        <activity android:name=".Delivered"
+                  android:label="Delivered">
+        </activity>
+
         <!-- workaround to fix bug -->
         <uses-library android:name="org.apache.http.legacy"
                       android:required="false"/>
