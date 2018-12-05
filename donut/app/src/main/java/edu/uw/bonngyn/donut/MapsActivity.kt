@@ -34,10 +34,12 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.common.collect.ImmutableList
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
 import kotlinx.android.synthetic.main.activity_maps.*
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -143,8 +145,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     // creates a dropoff for given information about a marker
-    private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean) {
-        val dropoff = Dropoff(title, description, location, delivered)
+    private fun createDropOff(title: String, description: String?, location: GeoPoint, delivered: Boolean, timestamp: Date) {
+        val dropoff = Dropoff(title, description, location, delivered, timestamp)
         database.collection("dropoffs")
             .add(dropoff)
             .addOnSuccessListener { documentReference ->
@@ -168,6 +170,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         val title = dropoffData.get("title") as String
                         val description = dropoffData.get("description") as String
                         val location = dropoffData.get("location") as Map<String, Number>
+                        val timestamp = dropoffData.get("timestamp") as Timestamp
                         val geoLoc = GeoPoint(location.get("latitude"), location.get("longitude"))
                         val delivered = dropoffData.get("delivered") as Boolean
 
@@ -230,7 +233,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title(title)
                     .snippet(description)
             )
-            createDropOff(title, description, location, false)
+            val calendar = Calendar.getInstance()
+            val datetime = calendar.time
+            createDropOff(title, description, location, false, datetime)
         }
 
         // cancels share
