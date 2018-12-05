@@ -15,6 +15,8 @@ Radius filter - filters the markers that show up on the map by radius
 
 Time filter - filters the markers so that only the markers that were placed within the last specified time show up on the map.
 
+Online Markers - markers are saved to a database which is visible by all using the app. Anyone can deliver food to any location!
+
 ## App Description
 #### *User Stories:*
 
