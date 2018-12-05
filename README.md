@@ -1,7 +1,5 @@
 # Donut
-## App Description
-
-#### *Basic Manual*
+## Simple Functionality Manual
 
 This app allows users to mark specific locations where any food or leftovers can be delivered for those in need. It is a map based application that has several functionalities:
 
@@ -17,6 +15,7 @@ Radius filter - filters the markers that show up on the map by radius
 
 Time filter - filters the markers so that only the markers that were placed within the last specified time show up on the map.
 
+## App Description
 #### *User Stories:*
 
 - As a user with leftover food, I want to be able to find places to donate my food, so that I don’t waste food
