@@ -22,6 +22,5 @@ class SettingsActivity : AppCompatActivity() {
             .beginTransaction()
             .replace(android.R.id.content, SettingsFragment())
             .commit()
-
     }
 }
