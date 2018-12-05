@@ -173,13 +173,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         val timestamp = dropoffData.get("timestamp") as Timestamp
                         val geoLoc = GeoPoint(location.get("latitude"), location.get("longitude"))
                         val delivered = dropoffData.get("delivered") as Boolean
-
+                        Log.v("donutTime", "" + timestamp)
                         val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
                         // TODO: use radius and time to filter the received markers
+                        //Filter by time
+                        val time = getTimeDifference(timestamp, Calendar.getInstance().time)
+                        val filterTime = Integer.parseInt(timeOption)
+                        Log.v("donutFilteredTime", "" + filterTime)
+                        Log.v("donutDifferenceTime", "" + time)
                         //Filter by radius
                         if(radiusToggle){
                             Location.distanceBetween(currentLocation!!.latitude, currentLocation!!.longitude, pos.latitude, pos.longitude, distResult)
-                            if((distResult[0] / 1000) <= radiusOption) {
+                            if((distResult[0] / 1000) <= radiusOption && time <= filterTime) {
                                 val marker = map.addMarker(
                                     MarkerOptions().position(pos)
                                         .title(title)
@@ -189,13 +194,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                 marker.tag = dropoff.id
                             }
                         } else {
-                            val marker = map.addMarker(
-                                MarkerOptions().position(pos)
-                                    .title(title)
-                                    .snippet(description)
-                                    .draggable(false)
-                            )
-                            marker.tag = dropoff.id
+                            if(time <= filterTime) {
+                                val marker = map.addMarker(
+                                    MarkerOptions().position(pos)
+                                        .title(title)
+                                        .snippet(description)
+                                        .draggable(false)
+                                )
+                                marker.tag = dropoff.id
+                            }
                         }
                     }
                 }
@@ -203,6 +210,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting dropoffs", exception)
             }
+    }
+
+    private fun getTimeDifference(timestamp: Timestamp, currTimestamp: Date):Double {
+        val difference = currTimestamp.time - (timestamp.seconds * 1000)
+        return ((difference * .001) / 60)
     }
 
 
