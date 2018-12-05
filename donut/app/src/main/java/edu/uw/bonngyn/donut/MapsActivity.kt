@@ -162,13 +162,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // gets all the dropoffs from the database and adds them to the map
     private fun getDropoffs() {
         val distResult = FloatArray(1)
+        val collection = mutableListOf<Map<String, Any>>()
         database.collection("dropoffs").whereEqualTo("delivered", false)
             .get()
             .addOnSuccessListener { result ->
                 if (!result.isEmpty) {
                     for (dropoff in result) {
                         val dropoffData = dropoff.data
-
+                        collection.add(dropoffData)
                         val title = dropoffData.get("title") as String
                         val description = dropoffData.get("description") as String
                         val location = dropoffData.get("location") as Map<String, Number>
@@ -212,6 +213,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting dropoffs", exception)
             }
+        shakeListener.setCollection(collection, currentLocation)
     }
 
     private fun getTimeDifference(timestamp: Timestamp, currTimestamp: Date):Double {
