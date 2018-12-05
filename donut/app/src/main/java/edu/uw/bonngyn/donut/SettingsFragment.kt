@@ -14,11 +14,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference("radius_option").isEnabled = preferenceManager.sharedPreferences.getBoolean("radius_option_bool", false)
         val edit = preferenceManager.sharedPreferences.edit()
         findPreference("radius_toggle").setOnPreferenceClickListener {
-            if(it.sharedPreferences.getBoolean("radius_toggle", false)) {
-                findPreference("radius_option").isEnabled = true
-            } else {
-                findPreference("radius_option").isEnabled = false
-            }
+            findPreference("radius_option").isEnabled = it.sharedPreferences.getBoolean("radius_toggle", false)
             edit.putBoolean("radius_option_bool", findPreference("radius_option").isEnabled).commit()
             true
         }

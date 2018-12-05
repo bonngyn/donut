@@ -33,7 +33,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.google.common.collect.ImmutableList
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
@@ -65,7 +64,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var shakeOption = false
     private var radiusOption = 15
     private var timeOption = "15"
-    private var zoomlevel = 18f
+    private var zoom = 18f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
@@ -127,9 +126,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map.setOnInfoWindowClickListener {
             dropoffAlert(it)
         }
+        shakeListener.setMap(map)
     }
 
-    // alert message to mark as delivered
+    // alert message to ask for delivery
     private fun dropoffAlert(marker: Marker) {
         val alertDialog = AlertDialog.Builder(this).create()
         alertDialog.setTitle("Delivery")
@@ -139,7 +139,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val dropoff  = database.collection("dropoffs").document(marker.tag.toString())
             dropoff.update("delivered", true)
             marker.remove()
-            // TODO: Delivered screen shows up
             startActivity(Intent(applicationContext, Delivered::class.java))
 
         }
@@ -178,7 +177,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         val delivered = dropoffData.get("delivered") as Boolean
                         Log.v("donutTime", "" + timestamp)
                         val pos = LatLng(location.get("latitude") as Double, location.get("longitude") as Double)
-                        // TODO: use radius and time to filter the received markers
+
                         //Filter by time
                         val time = getTimeDifference(timestamp, Calendar.getInstance().time)
                         val filterTime = Integer.parseInt(timeOption)
@@ -213,7 +212,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting dropoffs", exception)
             }
-        shakeListener.setCollection(collection, currentLocation)
+        shakeListener.setCollection(collection)
     }
 
     private fun getTimeDifference(timestamp: Timestamp, currTimestamp: Date):Double {
@@ -244,14 +243,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val title = title.text.toString()
             val description = description.text.toString()
             val location = GeoPoint(position.latitude, position.longitude)
-            map.addMarker(
-                MarkerOptions().position(position)
-                    .title(title)
-                    .snippet(description)
-            )
+//            map.addMarker(
+//                MarkerOptions().position(position)
+//                    .title(title)
+//                    .snippet(description)
+//            )
             val calendar = Calendar.getInstance()
             val datetime = calendar.time
             createDropOff(title, description, location, false, datetime)
+            getDropoffs()
         }
 
         // cancels share
@@ -291,13 +291,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     //zooming buttons
     private fun onClickZoomFab() {
         zoomin.setOnClickListener {
-            zoomlevel += 1
-            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+            zoom += 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoom))
         }
 
         zoomout.setOnClickListener {
-            zoomlevel -= 1
-            map.moveCamera(CameraUpdateFactory.zoomTo(zoomlevel))
+            zoom -= 1
+            map.moveCamera(CameraUpdateFactory.zoomTo(zoom))
         }
     }
 
@@ -329,8 +329,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     .title("Your location")
                     .icon(BitmapDescriptorFactory.defaultMarker(markerHue))
             )
-            zoomlevel = 18f
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomlevel))
+            val zoomLevel = 18f
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, zoomLevel))
         }
     }
 
@@ -392,6 +392,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 locationResult ?: return
                 for (location in locationResult.locations) {
                     currentLocation = location
+                    shakeListener.setCurrentLocation(location)
 
                     updateUI()
                 }
@@ -510,9 +511,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 .build(this);
             startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
         } catch (e: GooglePlayServicesRepairableException) {
-            // TODO: Handle the error.
+            Log.e(TAG, e.message)
         } catch (e: GooglePlayServicesNotAvailableException) {
-            // TODO: Handle the error.
+            Log.e(TAG, e.message)
         }
         return true
     }
@@ -527,7 +528,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 Log.i(TAG, "Place: " + place.name)
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 val status = PlaceAutocomplete.getStatus(this, data!!)
-                // TODO: Handle the error.
                 Log.i(TAG, status.statusMessage)
 
             } else if (resultCode == Activity.RESULT_CANCELED) {
